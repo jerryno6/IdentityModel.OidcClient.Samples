@@ -15,6 +15,8 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using xf=Xamarin.Forms;
+using Windows.Security.Authentication.Web;
+using IdentityModel.OidcClient.Browser;
 
 namespace XamarinFormsClient.UWP
 {
@@ -61,7 +63,8 @@ namespace XamarinFormsClient.UWP
 
                 Xamarin.Forms.Forms.Init(e);
 
-                xf.DependencyService.Register<WabBrowser>();
+                //xf.DependencyService.Register<WabBrowser>();
+                xf.DependencyService.Register<SystemBrowser>();
 
                 if (e.PreviousExecutionState == ApplicationExecutionState.Terminated)
                 {
@@ -106,5 +109,41 @@ namespace XamarinFormsClient.UWP
             //TODO: Save application state and stop any background activity
             deferral.Complete();
         }
-    }
+
+		//If we want to suport the web to link with the app via deeplinking uri handler,
+		//enable this block of code and writing business for it.
+		//We might need to edit the protocol scheme & Host Name in Package.appxmanifest
+		protected override void OnActivated(IActivatedEventArgs e)
+		{
+			Frame rootFrame = Window.Current.Content as Frame;
+
+			// If we need to handle advanced deeplinking using universal URI or custom url path, use the code below.
+			if (e.Kind == ActivationKind.Protocol)
+			{
+				var protocolArgs = (ProtocolActivatedEventArgs)e;
+				var callBackurl = protocolArgs.Uri.AbsoluteUri;
+
+                //todo: we need to handle for timeout & validate for the callBackurl
+                if (SystemBrowser.BrowserAuthenticationTaskCompletionSource != null)
+				{
+					var authenticationResult = new BrowserResult()
+					{
+						Response = callBackurl,
+						ResultType = BrowserResultType.Success,
+					};
+
+					SystemBrowser.BrowserAuthenticationTaskCompletionSource.SetResult(authenticationResult);
+				}
+
+				if (rootFrame.Content == null)
+				{
+					//Go to main page
+					rootFrame.Navigate(typeof(MainPage), string.Empty);
+				}
+
+				// Ensure the current window is active
+				Window.Current.Activate();
+			}
+		}
+	}
 }

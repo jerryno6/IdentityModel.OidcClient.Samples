@@ -97,6 +97,7 @@
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SystemBrowser.cs" />
     <Compile Include="WabBrowser.cs" />
   </ItemGroup>
   <ItemGroup>
