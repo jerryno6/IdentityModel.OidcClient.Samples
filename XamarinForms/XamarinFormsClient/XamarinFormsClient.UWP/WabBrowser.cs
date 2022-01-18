@@ -23,11 +23,7 @@ namespace XamarinFormsClient.UWP
         {
             var wabOptions = WebAuthenticationOptions.None;
 
-            if (options.ResponseMode == OidcClientOptions.AuthorizeResponseMode.FormPost)
-            {
-                wabOptions |= WebAuthenticationOptions.UseHttpPost;
-            }
-            if (_enableWindowsAuthentication)
+			if (_enableWindowsAuthentication)
             {
                 wabOptions |= WebAuthenticationOptions.UseCorporateNetwork;
             }
