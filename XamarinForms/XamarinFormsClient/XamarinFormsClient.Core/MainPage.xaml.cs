@@ -14,58 +14,81 @@ namespace XamarinFormsClient.Core
     [XamlCompilation(XamlCompilationOptions.Skip)]
     public partial class MainPage : ContentPage
     {
-        OidcClient _client;
-        LoginResult _result;
+		private const string AuthUrl = "https://pkce-xamarinformsclients.auth.eu-central-1.amazoncognito.com";
+		//private const string AuthUrl = "https://demo.identityserver.io";
+		private const string ClientId = "1knsantudc41sm66v1t01u2gr6";
+		private const string CallBackUrl = "xamarinformsclients://callback";
+		private const string AuthorizePath = "/oauth2/authorize";
+	    private const string TokenPath = "/oauth2/token";
+	    private const string UserInfoPath = "/oauth2/userInfo";
+	    private const string Scope = "openid";
 
-        Lazy<HttpClient> _apiClient = new Lazy<HttpClient>(() => new HttpClient());
+	    private readonly OidcClient _client;
+        private LoginResult _result;
+        private readonly Lazy<HttpClient> _apiClient;
 
-        public MainPage()
+		public MainPage()
         {
             InitializeComponent();
 
             Login.Clicked += Login_Clicked;
             CallApi.Clicked += CallApi_Clicked;
 
+			//Initialize OpenidConnectClient
             var browser = DependencyService.Get<IBrowser>();
 
-            var options = new OidcClientOptions
-            {
-                Authority = "https://demo.identityserver.io",
-                ClientId = "interactive.public",
-                Scope = "openid profile email api offline_access",
-                RedirectUri = "xamarinformsclients://callback",
-                Browser = browser
-            };
+			var options = new OidcClientOptions
+			{
+				Authority = AuthUrl,
+				ClientId = ClientId,
+				RedirectUri = CallBackUrl,
+				Scope = Scope,
+				Browser = browser,
 
-            _client = new OidcClient(options);
-            _apiClient.Value.BaseAddress = new Uri("https://demo.identityserver.io/");
-        }
+				ProviderInformation = new ProviderInformation()
+				{
+					IssuerName = "name of issuer", //any value you want except null/empty
+					KeySet = new IdentityModel.Jwk.JsonWebKeySet(),
+					AuthorizeEndpoint = $"{AuthUrl}{AuthorizePath}",
+					TokenEndpoint = $"{AuthUrl}{TokenPath}",
+					UserInfoEndpoint = $"{AuthUrl}{UserInfoPath}",
+				}
+			};
 
-        private async void Login_Clicked(object sender, EventArgs e)
-        {
-            _result = await _client.LoginAsync(new LoginRequest());
+			_client = new OidcClient(options);
 
-            if (_result.IsError)
-            {
-                OutputText.Text = _result.Error;
-                return;
-            }
+			//Initialize apiClient to get data from web api
+			_apiClient = new Lazy<HttpClient>(() => new HttpClient());
+			_apiClient.Value.BaseAddress = new Uri(AuthUrl);
+		}
 
-            var sb = new StringBuilder(128);
-            foreach (var claim in _result.User.Claims)
-            {
-                sb.AppendFormat("{0}: {1}\n", claim.Type, claim.Value);
-            }
+		private async void Login_Clicked(object sender, EventArgs e)
+		{
+			//Login PKCE flow
+			_result = await _client.LoginAsync(new LoginRequest());
 
-            sb.AppendFormat("\n{0}: {1}\n", "refresh token", _result?.RefreshToken ?? "none");
-            sb.AppendFormat("\n{0}: {1}\n", "access token", _result.AccessToken);
+			//Display result
+			if (_result.IsError)
+			{
+				OutputText.Text = _result.Error;
+				return;
+			}
 
-            OutputText.Text = sb.ToString();
+			var sb = new StringBuilder(128);
+			foreach (var claim in _result.User.Claims)
+			{
+				sb.AppendFormat("{0}: {1}\n", claim.Type, claim.Value);
+			}
 
-            _apiClient.Value.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _result?.AccessToken ?? "");
-        }
+			sb.AppendFormat("\n{0}: {1}\n", "refresh token", _result?.RefreshToken ?? "none");
+			sb.AppendFormat("\n{0}: {1}\n", "access token", _result.AccessToken);
 
-        private async void CallApi_Clicked(object sender, EventArgs e)
+			OutputText.Text = sb.ToString();
+
+			_apiClient.Value.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _result?.AccessToken ?? "");
+		}
+
+		private async void CallApi_Clicked(object sender, EventArgs e)
         {
 
             var result = await _apiClient.Value.GetAsync("api/test");
