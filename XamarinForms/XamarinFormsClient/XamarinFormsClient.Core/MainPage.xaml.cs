@@ -14,8 +14,8 @@ namespace XamarinFormsClient.Core
     [XamlCompilation(XamlCompilationOptions.Skip)]
     public partial class MainPage : ContentPage
     {
-		//private const string AuthUrl = "https://pkce-xamarinformsclients.auth.eu-central-1.amazoncognito.com";
-		private const string AuthUrl = "https://demo.identityserver.io";
+		private const string AuthUrl = "https://pkce-xamarinformsclients.auth.eu-central-1.amazoncognito.com";
+		//private const string AuthUrl = "https://demo.identityserver.io";
 		private const string ClientId = "1knsantudc41sm66v1t01u2gr6";
 		private const string CallBackUrl = "xamarinformsclients://callback";
 		private const string AuthorizePath = "/oauth2/authorize";
