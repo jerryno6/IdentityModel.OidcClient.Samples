@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml;
+﻿using IdentityModel.OidcClient;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
@@ -10,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
@@ -23,14 +25,57 @@ namespace WinUI3
     /// </summary>
     public sealed partial class MainWindow : Window
     {
+        private const string AuthUrl = "https://pkce-xamarinformsclients.auth.eu-central-1.amazoncognito.com";
+        private const string AuthorizePath = "/oauth2/authorize";
+        private const string TokenPath = "/oauth2/token";
+        private const string UserInfoPath = "/oauth2/userInfo";
+
         public MainWindow()
         {
             this.InitializeComponent();
         }
 
-        private void myButton_Click(object sender, RoutedEventArgs e)
+        private async void myButton_Click(object sender, RoutedEventArgs e)
         {
-            myButton.Content = "Clicked";
+            var options = new OidcClientOptions
+            {
+                Authority = AuthUrl,
+                ClientId = "1knsantudc41sm66v1t01u2gr6",
+                RedirectUri = "xamarinformsclients://callback",
+                Scope = "openid",
+                Browser = new EmbeddedBrowser(loginDialog),
+
+                ProviderInformation = new ProviderInformation()
+                {
+                    IssuerName = "name of issuer", //any value you want except null/empty
+                    KeySet = new IdentityModel.Jwk.JsonWebKeySet(),
+                    AuthorizeEndpoint = $"{AuthUrl}{AuthorizePath}",
+                    TokenEndpoint = $"{AuthUrl}{TokenPath}",
+                    UserInfoEndpoint = $"{AuthUrl}{UserInfoPath}",
+                }
+            };
+
+            var client = new OidcClient(options);
+            var result = await client.LoginAsync(new LoginRequest());
+
+            if (!string.IsNullOrEmpty(result.Error))
+            {
+                textBox.Text = result.Error;
+
+                return;
+            }
+
+            var sb = new StringBuilder();
+
+            foreach (var claim in result.User.Claims)
+            {
+                sb.AppendLine($"{claim.Type}: {claim.Value}");
+            }
+
+            sb.AppendLine($"refresh token: {result.RefreshToken}");
+            sb.AppendLine($"access token: {result.AccessToken}");
+
+            textBox.Text = sb.ToString();
         }
     }
 }
