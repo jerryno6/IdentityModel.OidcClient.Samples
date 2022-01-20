@@ -14,6 +14,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using IdentityModel;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -42,7 +43,7 @@ namespace WinUI3
                 Authority = AuthUrl,
                 ClientId = "1knsantudc41sm66v1t01u2gr6",
                 RedirectUri = "xamarinformsclients://callback",
-                Scope = "openid",
+                Scope = OidcConstants.StandardScopes.OpenId,
                 Browser = new EmbeddedBrowser(loginDialog),
 
                 ProviderInformation = new ProviderInformation()
@@ -57,7 +58,8 @@ namespace WinUI3
 
             var client = new OidcClient(options);
             var result = await client.LoginAsync(new LoginRequest());
-
+            var a = result.User.Claims.Where(x=>x.Type=="username");
+            
             if (!string.IsNullOrEmpty(result.Error))
             {
                 textBox.Text = result.Error;
